@@ -79,18 +79,22 @@ session's context — but then it fails the "Do NOT delegate when" test anyway.
 
 ## Step 3 — quota-aware selection
 
-Before delegating, the chosen adapter runs its **quota preflight** — each `do-<tool>`
-skill has a "Quota preflight" section with the exact probe and its own cooldown-cache
-shape. All caches live under `~/.cache/do-agent/` and are cache-first (a recent
-`available:false` with a future `resets_at` short-circuits without probing).
-`references/conventions.md` summarizes the union of return fields the router parses.
+Before delegating, the chosen adapter runs its **preflight** — each `do-<tool>` skill
+has a "Preflight" section covering capability (can the CLI/plan run a model at all?) and
+quota (does the bucket have headroom?), plus its own cooldown-cache shape. All caches
+live under `~/.cache/do-agent/` and are cache-first (a recent `available:false` with a
+future `resets_at` short-circuits without probing). `references/conventions.md`
+summarizes the union of return fields the router parses.
 
 - Preflight says **available** → proceed.
-- Preflight says **quota_exceeded** → do not delegate to it. Fall back to the 2nd
-  choice, or report back to the caller with the `resets_at` time and the alternatives.
-- **Every candidate adapter is quota_exceeded** → stop and report to the caller: which
-  buckets are exhausted and each `resets_at`. Do not do the work yourself as a
-  fallback and do not sit and wait — hand the decision back.
+- Preflight says **quota_exceeded** → don't delegate to it now. Fall back to the 2nd
+  choice, or report back to the caller with the `resets_at` and the alternatives.
+- Preflight says **error** (capability probe failed — stale CLI, plan can't run a
+  model) → treat that adapter as unavailable until fixed; fall back or report.
+- **No candidate adapter is available** (all `quota_exceeded` / `error`) → stop and
+  report to the caller: which buckets are exhausted, which tools are broken, and each
+  `resets_at`. Do not do the work yourself as a fallback and do not sit and wait —
+  hand the decision back.
 
 When you have 2+ viable adapters, prefer the one whose bucket has the most headroom —
 this is how idle subscription quota gets used.

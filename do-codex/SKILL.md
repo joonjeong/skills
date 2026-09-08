@@ -1,6 +1,6 @@
 ---
 name: do-codex
-description: Use when delegating a task to the Codex CLI (codex exec) headlessly — precise code generation, multi-file refactor, code review, test authoring, or research using Codex's browser/pdf/spreadsheet plugins. Runs a quota preflight against ChatGPT rate limits first.
+description: Use when delegating a task to the Codex CLI (codex exec) headlessly — precise code generation, multi-file refactor, code review, test authoring, or research using Codex's browser/pdf/spreadsheet plugins. Runs a capability + ChatGPT-quota preflight first.
 ---
 
 # do-codex — delegate to Codex CLI
@@ -37,6 +37,16 @@ to a local open-source provider (no ChatGPT quota).
 - Reasoning effort: `-c model_reasoning_effort="low|medium|high"` (also extra-high /
   max / ultra in newer builds).
 
+**A slug from the docs is not guaranteed to run on *this* install.** Two gates:
+- **CLI version** — a stale `codex` 400s newer slugs with *"requires a newer version of
+  Codex"* (e.g. 0.142.5 cannot run `gpt-5.6-*`). `codex --version` vs the docs.
+- **ChatGPT plan** — older slugs 400 with *"not supported when using Codex with a
+  ChatGPT account"*; the free tier is the most restricted. There may be **no** working
+  headless model on a stale CLI + free plan — in that case `do-codex` is unavailable,
+  route elsewhere.
+
+The only reliable check is the capability probe in §6.
+
 ## 3. Structured output
 
 ```bash
@@ -65,7 +75,39 @@ Never pass `--dangerously-bypass-approvals-and-sandbox` from a delegation.
 `codex exec resume --last` continues the most recent session. Capture the session id
 from the run for a targeted resume.
 
-## 6. Quota preflight (MANDATORY)
+## 6. Preflight (MANDATORY)
+
+Two checks, in order: **capability** (can it run at all?) then **quota** (does it have
+headroom?).
+
+### 6a. Capability probe
+
+A green rate-limit snapshot is meaningless if the CLI/plan can't run a model. Probe the
+exact model you intend to delegate with:
+
+```bash
+out=$(codex exec --skip-git-repo-check -C /tmp -s read-only -m "<model>" "reply with: ok" 2>&1)
+if printf '%s' "$out" | grep -qiE 'requires a newer version of Codex|not supported when using Codex with a ChatGPT account'; then
+  echo "INCAPABLE: $(printf '%s' "$out" | grep -oE '"message":"[^"]*"' | head -1)"
+elif printf '%s' "$out" | grep -qE 'invalid_request_error|"status":4[0-9][0-9]'; then
+  echo "ERROR: $(printf '%s' "$out" | grep -oE '"message":"[^"]*"' | head -1)"
+else
+  echo "OK"
+fi
+```
+
+- `OK` → capable, continue to 6b.
+- `INCAPABLE` → **not a quota problem.** Return `status: "error"`, `reason` = the
+  message; route elsewhere. Write `available:false`, `reason`, and a far-future
+  `resets_at` (`now + 604800`) to the cache so the router stops re-probing a dead CLI —
+  clear it only after `codex update` / a plan change.
+- `ERROR` → some other 400; report it, don't retry blindly.
+- Try each candidate model once; if none is capable, `do-codex` is unavailable.
+
+(Ignore unrelated stderr noise such as `codex_models_manager::cache: ... missing field`
+— match only the signatures above.)
+
+### 6b. Quota probe
 
 Codex persists a rate-limit snapshot in every session rollout file. Read the newest one:
 
@@ -184,6 +226,8 @@ own streamed output, kept for logs):
 
 - `status` ∈ `ok | quota_exceeded | auth_error | error`.
 - `quota_exceeded` → set `resets_at` from the rate-limit snapshot; `text` explains.
+- `error` → capability probe (§6a) failed: stale CLI or plan can't run any model.
+  `text` = the 400 message. Route elsewhere; don't retry until `codex update`.
 - `auth_error` → `codex login status` not logged in; don't retry.
 - `cost_usd` is `null` — ChatGPT-subscription usage is not billed per call.
 - Fill `usage` from the final `token_count.total_token_usage`.
