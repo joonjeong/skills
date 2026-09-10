@@ -24,3 +24,20 @@ brief.
 > unverified claim — run the verification or demand the evidence. Actively look for
 > gamed checks: weakened assertions, skipped or deleted tests, broadened exception
 > handlers, hard-coded return values, TODO stubs.
+
+## Red lenses — when running more than one red
+
+Give each red the base Red prompt above plus one focus:
+
+- **Correctness red:** logic errors, wrong outputs, unhandled inputs, broken
+  invariants, race conditions.
+- **Security red:** injection, auth/authz gaps, secret handling, unsafe defaults,
+  dependency risk.
+- **Readability red:** will the next maintainer understand this? Naming, structure,
+  dead code, missing or misleading comments.
+
+## More than one blue
+
+Multiple blues build **independent parts** in parallel — give each its own slice of
+the brief and its own worktree or directory. They do not review each other; that is
+red's job.

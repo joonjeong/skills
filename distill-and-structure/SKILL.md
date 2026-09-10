@@ -1,6 +1,6 @@
 ---
 name: distill-and-structure
-description: Use when a prose deliverable (design doc, spec, report, README, PR description, issue) is complete but hard to follow — diagnose its logical structure and style, and propose a concrete restructuring (revised outline + specific edits) using top-down pyramid and bottom-up synthesis. Reviews and proposes; does not rewrite.
+description: Use when a prose deliverable (design doc, spec, report, README, PR description, issue) is complete but hard to follow — diagnose how its content is organized and expressed, and propose a concrete restructuring (revised outline + specific edits) using top-down pyramid and bottom-up synthesis. Reviews and proposes; does not rewrite.
 ---
 
 # distill-and-structure — diagnose a document's legibility, propose a restructure
@@ -52,7 +52,9 @@ See `references/pyramid.md` for the grouping technique.
 
 ## Step 3 — Top-down pass
 
-Rebuild the document as a pyramid:
+First check the document *should* be a pyramid — a narrative postmortem, a tutorial,
+or a reference table should not be forced into one (see Anti-patterns). If a pyramid
+fits, rebuild the document as one:
 
 - The **governing message** first.
 - Then the **3–5 supporting claims** (the group claims from Step 2).

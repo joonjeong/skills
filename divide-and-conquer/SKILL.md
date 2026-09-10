@@ -72,6 +72,10 @@ Pick the cheapest executor that clears the bar for each unit.
 | `routine` coding | Claude Sonnet subagent — or `do-codex` (balanced) via `delegate-agent` |
 | `hard` · `novel-design` | Claude Opus subagent — or `do-claude` / `do-codex` (top tier) via `delegate-agent` |
 
+When a unit's two axes disagree on tier, **difficulty wins** — route a `hard` +
+`templated-repeat` unit as `hard`. Repetition pulls a unit *down* a tier only when
+its difficulty is `trivial` or `routine`.
+
 Concrete model slugs churn monthly — take them from
 `delegate-agent/references/model-index.md`, never hard-code them here.
 
