@@ -79,8 +79,9 @@ fail=0
 # 2. frontmatter name is delegate-agent
 grep -q '^name: delegate-agent$' delegate-agent/SKILL.md || { echo "FAIL: frontmatter name"; fail=1; }
 
-# 3. every remaining 'do-agent' occurrence in tracked md is a ~/.cache/ path
-stray=$(grep -rn "do-agent" --include="*.md" . | grep -v "/.git/" | grep -v "/.remember/" | grep -v '~/.cache/do-agent/' || true)
+# 3. every remaining 'do-agent' occurrence in skill md is a ~/.cache/ path
+#    (docs/ legitimately discusses the old name — the spec and this plan — so it is excluded)
+stray=$(grep -rn "do-agent" --include="*.md" . | grep -v "/.git/" | grep -v "/.remember/" | grep -v "/docs/" | grep -v '~/.cache/do-agent/' || true)
 if [ -n "$stray" ]; then echo "FAIL: stray router refs:"; echo "$stray"; fail=1; fi
 
 # 4. new router name is referenced by the adapters
@@ -135,7 +136,7 @@ In `do-council/references/plan-schema.md`, line 3: `\`do-agent\` executes it wav
 Run: `bash docs/superpowers/plans/checks/task1-grep.sh`
 Expected: PASS (no output, exit 0).
 
-Also run: `grep -rn "do-agent" --include="*.md" . | grep -v "/.git/" | grep -v "/.remember/"`
+Also run: `grep -rn "do-agent" --include="*.md" . | grep -v "/.git/" | grep -v "/.remember/" | grep -v "/docs/"`
 Expected: only lines containing `~/.cache/do-agent/`.
 
 - [ ] **Step 9: Commit**
@@ -838,8 +839,8 @@ Run:
 for d in divide-and-conquer red-team-blue-team distill-and-structure delegate-agent; do
   grep -q "^name: $d\$" "$d/SKILL.md" && echo "$d ok" || echo "$d MISMATCH"
 done
-# no dangling do-agent router references
-grep -rn "do-agent" --include="*.md" . | grep -v "/.git/" | grep -v "/.remember/" | grep -v '~/.cache/do-agent/' || echo "no stray router refs (expected)"
+# no dangling do-agent router references (docs/ excluded — spec/plan discuss the old name)
+grep -rn "do-agent" --include="*.md" . | grep -v "/.git/" | grep -v "/.remember/" | grep -v "/docs/" | grep -v '~/.cache/do-agent/' || echo "no stray router refs (expected)"
 # cross-links resolve: every 'See also' name is a real skill dir
 grep -rhoE '(divide-and-conquer|red-team-blue-team|distill-and-structure)' */SKILL.md | sort -u
 ```
