@@ -1,4 +1,4 @@
-# do-agent — union return contract
+# delegate-agent — union return contract
 
 Each `do-<tool>` adapter is self-contained: its SKILL.md carries its own "Quota
 preflight" cooldown-cache shape and its own return-contract example, specialized to what

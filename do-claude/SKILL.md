@@ -8,7 +8,7 @@ description: Use when delegating a task to a separate Claude Code process (claud
 Interface adapter for `claude -p`. Use this when you want Claude's strengths (writing,
 design, nuanced refactor) but on a **different quota** than the session you are in, or
 as a parallel worker. Self-contained: the cache and return-contract shapes below are the
-Claude-specific realization of the `do-agent` family conventions.
+Claude-specific realization of the `delegate-agent` family conventions.
 
 For same-session parallel subtasks that share context, use the `Agent` tool directly —
 not this skill.

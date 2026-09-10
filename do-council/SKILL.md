@@ -1,6 +1,6 @@
 ---
 name: do-council
-description: Use when one substantial requirement has several viable approaches and choosing wrong is expensive — convene a panel of different agent CLIs/models that propose, debate across rounds, and vote to a consensus, then turn that consensus into a division-of-labor plan. Feeds do-agent for execution.
+description: Use when one substantial requirement has several viable approaches and choosing wrong is expensive — convene a panel of different agent CLIs/models that propose, debate across rounds, and vote to a consensus, then turn that consensus into a division-of-labor plan. Feeds delegate-agent for execution.
 ---
 
 # do-council — deliberate to a consensus, then split the work
@@ -10,10 +10,10 @@ description: Use when one substantial requirement has several viable approaches 
 One requirement → several agents each propose an approach → they **debate** across
 rounds (concede / hold / revise), converging early where they can → they **vote**
 per decision → you record the consensus with every dissent → build a division-of-labor
-plan from it → (optionally) name an orchestrator → execute via `do-agent`.
+plan from it → (optionally) name an orchestrator → execute via `delegate-agent`.
 
 This skill runs the deliberation and the planning. Execution mechanics live in
-`do-agent` and the `do-<tool>` adapters. **One hop only** — a council member does not
+`delegate-agent` and the `do-<tool>` adapters. **One hop only** — a council member does not
 itself convene a council or delegate.
 
 ## When to use
@@ -24,7 +24,7 @@ itself convene a council or delegate.
 
 ## When NOT to use
 
-- One obvious approach → skip straight to `do-agent`.
+- One obvious approach → skip straight to `delegate-agent`.
 - The task needs this session's context and can't be serialized → not delegatable.
 - Trivial or urgent work — the deliberation spends 2-5 delegations before anything ships.
 
@@ -105,7 +105,7 @@ if most seats were one model family, say so and lower the stated confidence.
 ## Phase B — division-of-labor plan
 
 From the consensus, produce the structured plan object in `references/plan-schema.md`:
-independent units, a dependency DAG, a `do-agent` Step-2 route (adapter + model) per
+independent units, a dependency DAG, a `delegate-agent` Step-2 route (adapter + model) per
 unit, a per-bucket quota preflight, an execution pattern per wave, and an integration
 order with verification checkpoints. **Each unit cites the consensus decision it
 implements.**
@@ -120,7 +120,7 @@ itself.
 
 ## Re-planning triggers
 
-- A unit returns `quota_exceeded` or fails verification (`do-agent` Step 5) → pause,
+- A unit returns `quota_exceeded` or fails verification (`delegate-agent` Step 5) → pause,
   report to the operator, wait for a new instruction. No auto-retry.
 - A consensus assumption is proven wrong mid-execution → re-run a **targeted** mini-
   deliberation on just that point, not the whole council.

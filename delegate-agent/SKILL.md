@@ -1,9 +1,9 @@
 ---
-name: do-agent
+name: delegate-agent
 description: Use when a coding, writing, analysis, or research task could be handed to a different agent CLI — for parallelism, an independent second opinion, Claude quota relief, or a tool's particular strength. Router over do-codex, do-agy, do-copilot, do-claude.
 ---
 
-# do-agent — delegate work to another agent CLI
+# delegate-agent — delegate work to another agent CLI
 
 ## Overview
 

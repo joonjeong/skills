@@ -6,9 +6,9 @@ description: Use when delegating a task to the Codex CLI (codex exec) headlessly
 # do-codex — delegate to Codex CLI
 
 Interface adapter for `codex exec`. This skill is the interface only — deciding whether
-to delegate and what Codex is good at belongs to the caller or the `do-agent` router.
+to delegate and what Codex is good at belongs to the caller or the `delegate-agent` router.
 Self-contained: the cache and return-contract shapes below are the Codex-specific
-realization of the `do-agent` family conventions.
+realization of the `delegate-agent` family conventions.
 
 ## 1. Invocation
 

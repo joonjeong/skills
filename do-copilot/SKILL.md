@@ -6,9 +6,9 @@ description: Use when delegating a task to GitHub Copilot CLI (copilot -p) headl
 # do-copilot — delegate to GitHub Copilot CLI
 
 Interface adapter for `copilot -p`. This skill is the interface only — deciding whether
-to delegate and what Copilot is good at belongs to the caller or the `do-agent` router.
+to delegate and what Copilot is good at belongs to the caller or the `delegate-agent` router.
 Self-contained: the cache and return-contract shapes below are the Copilot-specific
-realization of the `do-agent` family conventions.
+realization of the `delegate-agent` family conventions.
 
 ## 1. Invocation
 
@@ -96,7 +96,7 @@ copilot billing 2>/dev/null > /tmp/do-copilot-billing.txt   # plan + AI credit b
 **Cache-first rule:** if `available == false` and `resets_at` is in the future and
 `checked_at` is within the last 30 min → return `quota_exceeded` without probing.
 Otherwise run `copilot billing`, refresh `plan` + `credits_remaining`, overwrite the
-cache. `plan` is required — the `do-agent` router uses it to apply the Pro+ model gate.
+cache. `plan` is required — the `delegate-agent` router uses it to apply the Pro+ model gate.
 `credits_remaining` comes from `copilot billing`; `resets_at` is the monthly reset date
 when known.
 

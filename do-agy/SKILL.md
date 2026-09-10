@@ -6,9 +6,9 @@ description: Use when delegating a task to Antigravity (agy) headlessly — larg
 # do-agy — delegate to Antigravity (agy)
 
 Interface adapter for `agy --print`. This skill is the interface only — deciding whether
-to delegate and what Antigravity is good at belongs to the caller or the `do-agent`
+to delegate and what Antigravity is good at belongs to the caller or the `delegate-agent`
 router. Self-contained: the cache and return-contract shapes below are the agy-specific
-realization of the `do-agent` family conventions.
+realization of the `delegate-agent` family conventions.
 
 ## 1. Invocation
 

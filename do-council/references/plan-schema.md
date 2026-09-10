@@ -1,6 +1,6 @@
 # Division-of-labor plan object
 
-Phase B freezes the consensus into this object. `do-agent` executes it wave by wave.
+Phase B freezes the consensus into this object. `delegate-agent` executes it wave by wave.
 Discuss it as a table first; emit the object once the operator approves.
 
 ```yaml
