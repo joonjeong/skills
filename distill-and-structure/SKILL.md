@@ -86,7 +86,9 @@ A short review document:
 2. **Governing message** — one sentence.
 3. **Proposed outline** — the heading tree with per-section claims.
 4. **Key relocations** — the located moves.
-5. **Top style fixes** — with before/after from the real text.
+5. **Cut list** — orphan points, duplicated points, and claims the document never
+   supports.
+6. **Top style fixes** — with before/after from the real text.
 
 ## Anti-patterns
 
@@ -100,7 +102,8 @@ A short review document:
 
 ## See also
 
-`divide-and-conquer`, `red-team-blue-team`.
+`divide-and-conquer` and `red-team-blue-team` produce the work; this skill makes the
+prose deliverable legible before it ships.
 
 ## References
 

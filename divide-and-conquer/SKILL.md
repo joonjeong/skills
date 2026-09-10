@@ -1,6 +1,6 @@
 ---
 name: divide-and-conquer
-description: Use when a requirement is large enough to split into independent work units of differing difficulty — decompose it, classify each unit by difficulty and repetition pattern, route each to the cheapest capable executor (a Claude subagent tier or an external CLI via delegate-agent), run them in parallel where independent, and integrate. No approach debate — for that use do-council.
+description: Use when a requirement is large enough to split into independent work units of differing difficulty or repetition — decompose it, classify each unit by difficulty and repetition pattern, route each to the cheapest capable executor (a Claude subagent tier or an external CLI via delegate-agent), run them in parallel where independent, and integrate. No approach debate — for that use do-council.
 ---
 
 # divide-and-conquer — split a requirement, route by difficulty, execute
@@ -19,7 +19,8 @@ were dispatched to run a unit, do the work directly.
 ## When to use
 
 - The requirement splits into **3 or more independent units**.
-- The units **vary in difficulty** — some are mechanical or repetitive, some are hard.
+- The units **vary in difficulty, or are repetitive enough to batch cheaply** — some
+  mechanical, some hard.
 - Spreading the work across cheaper executors (or off the Claude quota) is a win.
 
 ## When NOT to use
@@ -37,9 +38,8 @@ Break the requirement into units where each one:
 - has an **explicit interface** — what it takes in, what it produces,
 - is **independently testable**.
 
-Draw the dependency DAG. Mark each edge: which units are independent (can run in
-parallel) and which must wait for another's output. Apply YAGNI — drop any unit that
-does not serve the stated goal.
+Draw the dependency DAG. Mark each unit: independent (can run in parallel), or waiting
+on another's output. Apply YAGNI — drop any unit that does not serve the stated goal.
 
 ## Step 2 — Classify
 
@@ -99,6 +99,7 @@ Give every unit a self-contained brief:
 
 ```
 GOAL:       <one sentence>
+REPO/CWD:   <path>, branch <x>, working tree clean|dirty
 CONTEXT:    <files to read, by path; conventions to follow>
 TASK:       <numbered, concrete steps>
 OUTPUT:     <diff | file(s) | report to stdout — state the shape>
@@ -113,7 +114,9 @@ ACCEPTANCE: <how the result will be checked>
    TODO stubs. A unit's "it works" is a claim, not evidence.
 2. Run the project's verification (build, tests, linters) **yourself**.
 3. Assemble the units in DAG order; resolve interface mismatches at the seams.
-4. **On failure** — do not auto-retry, auto-resume, or re-delegate. Report to the
+4. **External work** — if a unit ran on an external CLI, attribute it
+   (`Assisted-by: <tool> (<model>)` in the commit body).
+5. **On failure** — do not auto-retry, auto-resume, or re-delegate. Report to the
    operator: the unit's output, the exact verification failure, and what you found.
    Keep the failed attempt available so the re-instruction can build on it.
 

@@ -52,7 +52,8 @@ NOT list, acceptance criteria). Blue returns a **complete draft** plus a short
 
 ## Step 2 — Red critiques
 
-Red reviews the draft against the requirement and its acceptance criteria. Every
+Red reviews the draft — and blue's self-assessment, treating the named weak spots as
+leads, not absolution — against the requirement and its acceptance criteria. Every
 finding is tagged and carries a concrete failure scenario:
 
 | Tag | Meaning |
@@ -71,10 +72,12 @@ and red both holding, with reasons) so the loop cannot spin forever.
 
 ## Step 4 — Terminate
 
+One round = one red critique plus blue's revision; blue's initial build is round 0.
+
 Stop when **either**:
 
-- Red returns **zero `BLOCKING` findings** and introduced no new `BLOCKING` that round,
-  **or**
+- Red returns **zero open `BLOCKING` findings** — a finding the operator has arbitrated
+  in blue's favour is closed; record the dismissal — **or**
 - The **round cap** is hit. The operator sets it; default **3**, hard max **6**.
 
 If the cap is hit with `BLOCKING` findings still open: **stop and report to the
@@ -101,7 +104,8 @@ body). Team members have no commit/push/PR rights.
 
 ## See also
 
-`divide-and-conquer`, `distill-and-structure`.
+`divide-and-conquer` to split a large requirement into units first;
+`distill-and-structure` for a legibility pass on the final prose.
 
 ## References
 

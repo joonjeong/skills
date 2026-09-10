@@ -269,3 +269,23 @@ Stated in this spec and as a one-line "See also" in each `SKILL.md`:
 - Any change to `registry.yaml` or `README.md`.
 - The skills invoking one another or sharing a dispatch reference.
 - `distill-and-structure` rewriting text, or covering code.
+
+## 11. Post-implementation amendments
+
+Wording refined during implementation — the SDD ledger records the rulings; sections 4–8
+above remain the original design record.
+
+- §7.1 `distill-and-structure` description: "diagnose its logical structure and style" →
+  "diagnose how its content is organized and expressed" ("logical structure" read as a
+  correctness question and risked poaching review requests).
+- §7.2 Output format: added a fifth item, **Cut list**, so Step 2's orphan / duplicate /
+  missing-link flags have a home.
+- §6.2 `red-team-blue-team`: defined "round" (one red critique + blue revision; initial
+  build is round 0); red now also reviews blue's self-assessment; an operator-arbitrated
+  `BLOCKING` counts as closed for termination.
+- §5.2 `divide-and-conquer`: added an external-CLI attribution step to Step 5; added
+  `REPO/CWD` to the brief template; softened the "vary in difficulty" gate to admit
+  uniform repetitive batches (and the frontmatter description to match); "mark each
+  unit" (not "edge") in Step 1.
+- §8 See also: `red-team-blue-team` and `distill-and-structure` gained composition
+  half-lines matching `divide-and-conquer`'s.
