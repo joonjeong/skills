@@ -1,51 +1,61 @@
 ---
 name: do-codex
-description: Use when delegating a task to the Codex CLI (codex exec) headlessly — precise code generation, multi-file refactor, code review, test authoring, or research using Codex's browser/pdf/spreadsheet plugins. Runs a capability + ChatGPT-quota preflight first.
+description: Use when delegating precise code generation, multi-file refactoring, dedicated code review, or plugin-assisted research to the Codex CLI (codex exec) headlessly, or when offloading to ChatGPT subscription quota.
 ---
 
 # do-codex — delegate to Codex CLI
 
-Interface adapter for `codex exec`. This skill is the interface only — deciding whether
-to delegate and what Codex is good at belongs to the caller or the `delegate-agent` router.
-Self-contained: the cache and return-contract shapes below are the Codex-specific
-realization of the `delegate-agent` family conventions.
+Interface adapter for `codex exec`. Deciding whether to delegate and what Codex is
+good at belongs to the caller or the `delegate-agent` router. Self-contained: the cache
+and return-contract shapes below are the Codex-specific realization of the `delegate-agent`
+family conventions.
 
 ## 1. Invocation
 
 ```bash
-codex exec "<brief>"                    # prompt as arg
-printf '%s' "<brief>" | codex exec -    # prompt on stdin
-codex exec --skip-git-repo-check -C <dir> "<brief>"
+# Read / Analysis / Review (no file edits, safest)
+codex exec -s read-only "<brief>"
+codex exec --skip-git-repo-check -C <dir> -s read-only "<brief>"
 codex exec review --uncommitted "<review instructions>"   # dedicated code review
+
+# Code Edits / Generation (using managed git worktree or isolated dir)
+codex exec --worktree -s workspace-write --approve-for-me "<brief>"
+codex exec -C <dir> -s workspace-write --approve-for-me "<brief>"
+
+# Structured output & schema enforcement
+codex exec --json "<brief>"                       # JSONL events on stdout
+codex exec --output-schema schema.json "<brief>"  # enforce final-response shape
+codex exec -o /tmp/last.txt "<brief>"             # final message to a file
+
+# Session resume (e.g. feeding back test failure output from host)
+codex exec resume --last "<follow-up / test failure logs>"
+codex exec resume <session-id> "<follow-up>"
 ```
 
 - Working dir: `-C <dir>` (or run from the dir). `--skip-git-repo-check` for non-repos.
-- Resume: `codex exec resume --last` or `codex exec resume <session-id>`.
+- Managed worktree: `--worktree` runs in an automatic, isolated Git worktree to protect the host workspace.
 
 ## 2. Model catalog + quota bucket
 
 Bucket: **ChatGPT subscription** (single pool, `limit_id: "codex"`), primary window
 plus a possible secondary window.
 
-Current slugs (2026-09): `gpt-6-astra`, `gpt-5.6-sol`, `gpt-5.6-terra`,
-`gpt-5.6-luna` (default here), `gpt-5.3-codex-spark` (coding preview). `--oss` switches
-to a local open-source provider (no ChatGPT quota).
+Current slugs (2026-09):
+- `gpt-6-astra` — Frontier reasoning, top-tier architectural design.
+- `gpt-5.6-sol` — Complex multi-file refactor (effort: `high` or `ultra`).
+- `gpt-5.6-terra` — Balanced everyday coding and analysis (tooling/plugins).
+- `gpt-5.6-luna` — Fast, lightweight, saves quota (default for routine tasks).
+- `gpt-5.3-codex-spark` — Coding preview.
+- `--oss` — Local open-source provider via Ollama/LM Studio (zero ChatGPT quota).
 
-- No list command. Verify current models: <https://learn.chatgpt.com/docs/models> or
-  `/model` in the interactive TUI.
+- Discovery & verify: `/model` in interactive TUI or <https://learn.chatgpt.com/docs/models>.
 - Select: `-m <slug>` or `-c model="<slug>"`.
-- Reasoning effort: `-c model_reasoning_effort="low|medium|high"` (also extra-high /
-  max / ultra in newer builds).
+- Reasoning effort: `-c model_reasoning_effort="low|medium|high|ultra"`.
 
-**A slug from the docs is not guaranteed to run on *this* install.** Two gates:
-- **CLI version** — a stale `codex` 400s newer slugs with *"requires a newer version of
-  Codex"* (e.g. 0.142.5 cannot run `gpt-5.6-*`). `codex --version` vs the docs.
-- **ChatGPT plan** — older slugs 400 with *"not supported when using Codex with a
-  ChatGPT account"*; the free tier is the most restricted. There may be **no** working
-  headless model on a stale CLI + free plan — in that case `do-codex` is unavailable,
-  route elsewhere.
-
-The only reliable check is the capability probe in §6.
+**A slug from the docs is not guaranteed to run on *this* install:**
+- **CLI version**: Stale `codex` 400s newer slugs with *"requires a newer version of Codex"*. Check `codex --version`.
+- **ChatGPT plan**: Older slugs 400 with *"not supported when using Codex with a ChatGPT account"*. Free tier is most restricted.
+- The capability probe in §7a is the only authoritative gate.
 
 ## 3. Structured output
 
@@ -55,35 +65,62 @@ codex exec -o /tmp/last.txt "<brief>"             # final message to a file
 codex exec --output-schema schema.json "<brief>"  # enforce final-response shape
 ```
 
-Parse the last `item_completed` / `AgentMessage` event from `--json` for the final text,
-and `token_count` events for `usage` + `rate_limits`.
+Parse the last `item_completed` / `AgentMessage` event from `--json` for final text, and `token_count` events for `usage` + `rate_limits`.
 
-## 4. Sandbox / permissions
+## 4. Execution modes & Permission flags (CRITICAL for headless runs)
 
-Default is sandboxed. Be explicit:
+In headless execution from another agent (such as Antigravity, Claude, or Hermes), stdin is non-interactive:
 
-```bash
-codex exec -s read-only "<brief>"        # analysis / review — safest
-codex exec -s workspace-write "<brief>"  # allow edits in the workspace
-codex exec -s danger-full-access ...     # avoid
-```
+| Delegation Goal | Recommended Flags | Rationale |
+|---|---|---|
+| **Read / Analysis / Review** | `-s read-only` | Prevents file writes and unsafe commands. Zero confirmation prompts. |
+| **Direct File Editing** | `--worktree -s workspace-write --approve-for-me` | `--approve-for-me` routes file/tool approvals through automatic review without prompting. `--worktree` isolates edits. |
 
-Never pass `--dangerously-bypass-approvals-and-sandbox` from a delegation.
+### Why commands fail when calling Codex headlessly
+- **Confirmation Prompts**: Without `--approve-for-me`, workspace writes or command executions request interactive user approval. In headless mode stdin is closed, causing execution to hang or abort.
+- **Dangerous Bypass**: Never use `--dangerously-bypass-approvals-and-sandbox` unless the outer host is an already-isolated ephemeral container. Use `--worktree -s workspace-write --approve-for-me` instead.
 
-## 5. Session resume
+## 5. Delegation Strategy: Command Separation Principle
 
-`codex exec resume --last` continues the most recent session. Capture the session id
-from the run for a targeted resume.
+To maximize work delegation to Codex while eliminating environment-related tool failures, separate **Reasoning/Generation** from **Command Execution**:
 
-## 6. Preflight (MANDATORY)
+### What to delegate maximally to Codex
+1. **Precise code generation & complex algorithms**: Pure algorithmic functions, edge-case heavy logic, math/data structures.
+2. **Multi-file refactoring**: Translating interfaces, updating deprecations across multiple files (`--worktree -s workspace-write --approve-for-me`).
+3. **Dedicated code review**: `codex exec review --uncommitted` for rigorous line-level correctness checks.
+4. **Structured JSON extraction**: Schema-constrained output using `--output-schema`.
+5. **Research with plugins**: Browsing, PDF reading, spreadsheet analysis via enabled Codex plugins.
 
-Two checks, in order: **capability** (can it run at all?) then **quota** (does it have
-headroom?).
+### What to retain for the Host orchestrator (DO NOT delegate to Codex)
+- **Running test suites** (`pytest`, `npm test`, `cargo test`)
+- **Compiling / building** (`make`, `cargo build`, `npm run build`)
+- **Package installation & network operations** (`pip`, `npm install`, `curl`)
+- **Git operations** (`git commit`, `git push`, PR creation)
 
-### 6a. Capability probe
+### The Delegate-Verify-Resume Loop
+1. **Host writes brief** instructing Codex to edit code or output diff, explicitly forbidding shell commands:
+   ```
+   DO NOT: run shell commands, package managers, test suites, or git commands.
+   TASK: Implement the specified changes in the target files.
+         The orchestrator will execute tests and verify.
+   ```
+2. **Codex executes** code modifications under `--worktree -s workspace-write --approve-for-me`.
+3. **Host verifies**: Host orchestrator runs tests and linters in the worktree.
+4. **If tests fail**: Host feeds compiler/test error output back into Codex via resume:
+   `codex exec resume --last "Verification failed with errors: <paste output>. Fix the code without running commands."`
+5. **Codex fixes code** -> Host re-verifies.
 
-A green rate-limit snapshot is meaningless if the CLI/plan can't run a model. Probe the
-exact model you intend to delegate with:
+## 6. Session resume
+
+`codex exec resume --last` continues the most recent session. Capture the session id from the run for a targeted resume.
+
+## 7. Preflight (MANDATORY)
+
+Two checks, in order: **capability** (can it run at all?) then **quota** (does it have headroom?).
+
+### 7a. Capability probe
+
+A green rate-limit snapshot is meaningless if the CLI/plan can't run a model. Probe the exact model you intend to delegate with:
 
 ```bash
 out=$(codex exec --skip-git-repo-check -C /tmp -s read-only -m "<model>" "reply with: ok" 2>&1)
@@ -96,18 +133,12 @@ else
 fi
 ```
 
-- `OK` → capable, continue to 6b.
-- `INCAPABLE` → **not a quota problem.** Return `status: "error"`, `reason` = the
-  message; route elsewhere. Write `available:false`, `reason`, and a far-future
-  `resets_at` (`now + 604800`) to the cache so the router stops re-probing a dead CLI —
-  clear it only after `codex update` / a plan change.
+- `OK` → capable, continue to 7b.
+- `INCAPABLE` → **not a quota problem.** Return `status: "error"`, `reason` = the message; route elsewhere. Write `available:false`, `reason`, and a far-future `resets_at` (`now + 604800`) to the cache so the router stops re-probing a dead CLI — clear it only after `codex update` / a plan change.
 - `ERROR` → some other 400; report it, don't retry blindly.
 - Try each candidate model once; if none is capable, `do-codex` is unavailable.
 
-(Ignore unrelated stderr noise such as `codex_models_manager::cache: ... missing field`
-— match only the signatures above.)
-
-### 6b. Quota probe
+### 7b. Quota probe
 
 Codex persists a rate-limit snapshot in every session rollout file. Read the newest one:
 
@@ -134,7 +165,6 @@ if not snap:
 def win(w):
     w = w or {}
     used = w.get("used_percent")
-    # newer builds: resets_at (epoch). older builds: resets_in_seconds (relative).
     resets = w.get("resets_at")
     if resets is None and w.get("resets_in_seconds") is not None:
         resets = int(time.time()) + int(w["resets_in_seconds"])
@@ -145,7 +175,6 @@ su, sr = win(snap.get("secondary"))
 reached = snap.get("rate_limit_reached_type")
 spend = snap.get("spend_control_reached")
 worst = max([x for x in (pu, su) if x is not None], default=None)
-# soonest reset among windows that are actually near/over the limit
 resets = pr if (pu or 0) >= (su or 0) else sr
 blocked = (worst is not None and worst >= 90) or bool(reached) or bool(spend)
 print(json.dumps({
@@ -158,8 +187,7 @@ print(json.dumps({
 EOF
 ```
 
-Check **both** windows — `primary` is the short rolling window (5h on Plus/Pro, ~30d on
-free), `secondary` is the longer/weekly one. A weekly-limit hit shows only in `secondary`.
+Check **both** windows — `primary` is the short rolling window (5h on Plus/Pro, ~30d on free), `secondary` is the longer/weekly one.
 
 ### Cooldown cache — `~/.cache/do-agent/codex.json`
 
@@ -175,27 +203,9 @@ free), `secondary` is the longer/weekly one. A weekly-limit hit shows only in `s
 }
 ```
 
-**Cache-first rule:** read the cache; if `available == false` and `resets_at` is in the
-future and `checked_at` is within the last 30 min → return `quota_exceeded` without
-probing. Otherwise probe (the snippet above), then overwrite the cache. Also update the
-cache after every run: on success record `last_used_percent`; on a rate-limit hit set
-`available:false` + `resets_at`. Codex fills all fields because the rollout snapshot
-carries `used_percent`, `resets_at`, and `plan_type`.
+**Cache-first rule:** if `available == false` and `resets_at` is in future and `checked_at` < 30 min → return `quota_exceeded` without probing. Otherwise probe, then overwrite cache.
 
-- The snapshot is only as fresh as your last Codex call. If `reason`'s `snap=` timestamp
-  is more than a few hours old, do a **minimal fresh probe** (costs one tiny request,
-  not the real task) and read the `rate_limits` from its first `token_count` event:
-
-  ```bash
-  codex exec --json --skip-git-repo-check -C /tmp "reply with the word ok" 2>/dev/null \
-    | python3 -c "import json,sys;[print(json.dumps(json.loads(l)['payload']['rate_limits'])) for l in sys.stdin if '\"rate_limits\"' in l][-1:]"
-  ```
-
-- During the real run, the first `token_count` in `--json` also carries current limits —
-  abort and record `quota_exceeded` if it shows ≥100% or `rate_limit_reached_type`.
-- `blocked` → return `status: "quota_exceeded"` with `resets_at`, do **not** delegate.
-
-## 7. Auth check (no secret exposure)
+## 8. Auth check (no secret exposure)
 
 ```bash
 command -v codex >/dev/null || echo "codex not installed"
@@ -204,10 +214,9 @@ codex login status  # expect "Logged in using ChatGPT"; summary only — never c
 
 Fallback if `login status` is unavailable in this build: `test -f ~/.codex/auth.json`.
 
-## 8. Normalized return contract
+## 9. Normalized return contract
 
-Print one JSON object as the **last line of stdout** (everything before it is Codex's
-own streamed output, kept for logs):
+Print one JSON object as the **last line of stdout**:
 
 ```json
 {
@@ -225,22 +234,25 @@ own streamed output, kept for logs):
 ```
 
 - `status` ∈ `ok | quota_exceeded | auth_error | error`.
-- `quota_exceeded` → set `resets_at` from the rate-limit snapshot; `text` explains.
-- `error` → capability probe (§6a) failed: stale CLI or plan can't run any model.
-  `text` = the 400 message. Route elsewhere; don't retry until `codex update`.
-- `auth_error` → `codex login status` not logged in; don't retry.
-- `cost_usd` is `null` — ChatGPT-subscription usage is not billed per call.
+- `quota_bucket` is `"chatgpt"`.
+- `cost_usd` is `null` — ChatGPT-subscription usage is subscription-metered.
 - Fill `usage` from the final `token_count.total_token_usage`.
 - `files_changed`: `git diff` in the target dir after a `workspace-write` run.
 
-## 9. Guardrails
+## 10. Guardrails & Common Failure Modes
 
-- `-s read-only` unless the brief explicitly needs edits.
-- Delegated Codex must not `commit`, `push`, or open PRs — you integrate.
-- When you stage the result, use **explicit paths** (`git add <path>...`), never
-  `git add -A` / `git add .` — the target tree may already carry unrelated untracked
-  files that must not be swept into your commit.
-- Parallel Codex runs that write must each get their own directory / worktree.
-- Research plugins (browser, pdf, spreadsheets, documents, visualize) must be enabled:
-  check `~/.codex/config.toml` `[plugins.*]` blocks. If a routed task needs one and it
-  is off, tell the caller rather than silently degrading.
+### Guardrails
+- **Use `--worktree`**: Isolate file modifications in an automatic Git worktree.
+- **No Git/PR actions from Codex**: Codex must never commit, push, or open PRs. The host orchestrator reviews and lands changes.
+- **Stage with explicit paths**: `git add <path>...`, never `git add -A` or `git add .`.
+- **Forbid shell command execution in brief**: Always instruct Codex not to run tests or builds directly.
+
+### Common Failure Modes & Remedies
+
+| Symptom / Failure | Root Cause | Fix |
+|---|---|---|
+| **Hangs / stalls in headless run** | Approval prompt requested for workspace write or tool execution | Add `--approve-for-me` with `-s workspace-write`, or use `-s read-only` |
+| **Command fails in subshell** | Tool execution restricted or blocked by Codex sandbox policy | Enforce Command Separation: host runs tests; Codex only produces code edits |
+| **Working tree collision / dirty tree** | Parallel writing runs overwriting same directory | Pass `--worktree` to automatically run in a new managed Git worktree |
+| **Model 400 error (Incapable)** | Stale Codex CLI or ChatGPT plan restriction | Run capability probe (§7a); route to supported model or update CLI |
+| **Plugin missing error** | Task routed for browser/pdf/spreadsheet but plugin disabled in config | Check `~/.codex/config.toml` `[plugins.*]` before routing |
