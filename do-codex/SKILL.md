@@ -19,15 +19,15 @@ codex exec --skip-git-repo-check -C <dir> -s read-only "<brief>"
 codex exec review --uncommitted "<review instructions>"   # dedicated code review
 
 # Code Edits / Generation (using managed git worktree or isolated dir)
-codex exec --worktree -s workspace-write --approve-for-me "<brief>"
-codex exec -C <dir> -s workspace-write --approve-for-me "<brief>"
+codex exec --worktree --approve-for-me "<brief>"
+codex exec -C <dir> --approve-for-me "<brief>"
 
 # Structured output & schema enforcement
 codex exec --json "<brief>"                       # JSONL events on stdout
 codex exec --output-schema schema.json "<brief>"  # enforce final-response shape
 codex exec -o /tmp/last.txt "<brief>"             # final message to a file
 
-# Session resume (e.g. feeding back test failure output from host)
+# Session resume (do NOT pass --approve-for-me or -s to resume; see §6)
 codex exec resume --last "<follow-up / test failure logs>"
 codex exec resume <session-id> "<follow-up>"
 ```
@@ -41,12 +41,15 @@ Bucket: **ChatGPT subscription** (single pool, `limit_id: "codex"`), primary win
 plus a possible secondary window.
 
 Current slugs (2026-09):
-- `gpt-6-astra` — Frontier reasoning, top-tier architectural design.
-- `gpt-5.6-sol` — Complex multi-file refactor (effort: `high` or `ultra`).
-- `gpt-5.6-terra` — Balanced everyday coding and analysis (tooling/plugins).
-- `gpt-5.6-luna` — Fast, lightweight, saves quota (default for routine tasks).
-- `gpt-5.3-codex-spark` — Coding preview.
+- `gpt-6-astra` — Flagship model: state-of-the-art reasoning, multi-step agentic workflows, difficult coding & software engineering.
+- `gpt-6-sol` — High-tier reasoning: complex multi-file refactoring and architecture design (effort: `medium|high|ultra`).
+- `gpt-6-luna` — High-speed, cost-optimized workhorse: routine code changes, classification, and quick refactoring.
+- `gpt-5.6-sol` — Previous generation reasoning model.
+- `gpt-5.6-terra` — Balanced quality, latency, and cost for general coding and analysis.
+- `gpt-5.6-luna` — Previous generation lightweight model.
 - `--oss` — Local open-source provider via Ollama/LM Studio (zero ChatGPT quota).
+
+Note: The family alias is `gpt-6`. Do not invent unverified slugs like `gpt-6-pro` (explicitly unmapped in Codex runtime).
 
 - Discovery & verify: `/model` in interactive TUI or <https://learn.chatgpt.com/docs/models>.
 - Select: `-m <slug>` or `-c model="<slug>"`.
@@ -74,11 +77,15 @@ In headless execution from another agent (such as Antigravity, Claude, or Hermes
 | Delegation Goal | Recommended Flags | Rationale |
 |---|---|---|
 | **Read / Analysis / Review** | `-s read-only` | Prevents file writes and unsafe commands. Zero confirmation prompts. |
-| **Direct File Editing** | `--worktree -s workspace-write --approve-for-me` | `--approve-for-me` routes file/tool approvals through automatic review without prompting. `--worktree` isolates edits. |
+| **Direct File Editing** | `--worktree --approve-for-me` | `--approve-for-me` already selects the `workspace-write` sandbox and routes approvals automatically. `--worktree` isolates edits. |
 
 ### Why commands fail when calling Codex headlessly
+- **Mutual Exclusivity of `--sandbox` and `--approve-for-me` (CRITICAL)**:
+  `--approve-for-me` internally configures the `workspace-write` sandbox policy. Combining `-s/--sandbox` with `--approve-for-me` causes an immediate CLI error:
+  `error: the argument '--sandbox <SANDBOX_MODE>' cannot be used with '--approve-for-me'`.
+  **Never combine `-s` and `--approve-for-me`.** Pass `--approve-for-me` by itself.
 - **Confirmation Prompts**: Without `--approve-for-me`, workspace writes or command executions request interactive user approval. In headless mode stdin is closed, causing execution to hang or abort.
-- **Dangerous Bypass**: Never use `--dangerously-bypass-approvals-and-sandbox` unless the outer host is an already-isolated ephemeral container. Use `--worktree -s workspace-write --approve-for-me` instead.
+- **Dangerous Bypass**: Never use `--dangerously-bypass-approvals-and-sandbox` unless the outer host is an already-isolated ephemeral container. Use `--worktree --approve-for-me` instead.
 
 ## 5. Delegation Strategy: Command Separation Principle
 
@@ -104,15 +111,27 @@ To maximize work delegation to Codex while eliminating environment-related tool 
    TASK: Implement the specified changes in the target files.
          The orchestrator will execute tests and verify.
    ```
-2. **Codex executes** code modifications under `--worktree -s workspace-write --approve-for-me`.
+2. **Codex executes** code modifications under `--worktree --approve-for-me`.
 3. **Host verifies**: Host orchestrator runs tests and linters in the worktree.
 4. **If tests fail**: Host feeds compiler/test error output back into Codex via resume:
    `codex exec resume --last "Verification failed with errors: <paste output>. Fix the code without running commands."`
+   *(Note: If `resume` stalls on approvals, do not repeatedly retry; use a fresh session with `--worktree --approve-for-me`)*.
 5. **Codex fixes code** -> Host re-verifies.
 
-## 6. Session resume
+## 6. Session resume & Continuation
 
-`codex exec resume --last` continues the most recent session. Capture the session id from the run for a targeted resume.
+```bash
+codex exec resume --last "<follow-up prompt>"
+codex exec resume <session-id> "<follow-up prompt>"
+```
+
+**CRITICAL limitations of `codex exec resume`:**
+- **No `--approve-for-me` or `-s/--sandbox` in `resume`**: The `resume` subcommand does not accept `--approve-for-me` or `--sandbox`. Passing them will fail with an unknown option error and result in empty/failed runs.
+- **Approval behavior on resume**: `resume` inherits the previous session's sandbox mode, but if interactive approval is triggered in headless mode, execution will hang or fail.
+- **Recommended Fallback (Fresh Session)**: If `resume` fails or cannot proceed non-interactively, start a fresh session with context instead:
+  ```bash
+  codex exec --worktree --approve-for-me "Previous verification failed with: <error output>. Inspect the files and fix the issues."
+  ```
 
 ## 7. Preflight (MANDATORY)
 
@@ -251,7 +270,9 @@ Print one JSON object as the **last line of stdout**:
 
 | Symptom / Failure | Root Cause | Fix |
 |---|---|---|
-| **Hangs / stalls in headless run** | Approval prompt requested for workspace write or tool execution | Add `--approve-for-me` with `-s workspace-write`, or use `-s read-only` |
+| **`--sandbox cannot be used with --approve-for-me`** | Conflicting flags: `--approve-for-me` already selects the workspace-write sandbox | Remove `-s / --sandbox`. Pass `--approve-for-me` alone (e.g. `--worktree --approve-for-me`) |
+| **Empty run / option error on `resume`** | Passed `--approve-for-me` or `-s` to `codex exec resume` (unsupported on resume) | Omit flags from resume command, or start a fresh session with `--worktree --approve-for-me` |
+| **Hangs / stalls in headless run** | Approval prompt requested for workspace write without auto-approval | Add `--approve-for-me` (without `-s`), or use `-s read-only` |
 | **Command fails in subshell** | Tool execution restricted or blocked by Codex sandbox policy | Enforce Command Separation: host runs tests; Codex only produces code edits |
 | **Working tree collision / dirty tree** | Parallel writing runs overwriting same directory | Pass `--worktree` to automatically run in a new managed Git worktree |
 | **Model 400 error (Incapable)** | Stale Codex CLI or ChatGPT plan restriction | Run capability probe (§7a); route to supported model or update CLI |

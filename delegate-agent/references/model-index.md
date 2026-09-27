@@ -6,9 +6,9 @@ section carries the current slugs plus a live-discovery command. Snapshot: 2026-
 
 | Want | 1st choice (adapter, example model) | Bucket | Alternative (condition) |
 |---|---|---|---|
-| Top-tier general reasoning | `do-claude` (`opus`: `claude-opus-5-5`, 1M context) · `do-codex` (`gpt-6-astra` / `gpt-5.6-sol`) | Claude Max / ChatGPT | `do-copilot` (Opus 5) — **Pro+ or higher** |
-| Everyday coding (balanced) | `do-codex` (`gpt-5.6-terra`) · `do-claude` (`sonnet`: `claude-sonnet-5`) | ChatGPT / Claude Max | `do-copilot` (`--model auto`) — Pro OK |
-| Fast + cheap | `do-codex` (`gpt-5.6-luna`) · `do-agy` (`gemini-3.8-flash-low`) | ChatGPT / agy:Gemini | `do-copilot` (auto) — Pro OK |
+| Top-tier general reasoning | `do-claude` (`opus`: `claude-opus-5-5`, 1M context) · `do-codex` (`gpt-6-astra` / `gpt-6-sol`) | Claude Max / ChatGPT | `do-copilot` (Opus 5) — **Pro+ or higher** |
+| Everyday coding (balanced) | `do-codex` (`gpt-6-luna` / `gpt-5.6-terra`) · `do-claude` (`sonnet`: `claude-sonnet-5`) | ChatGPT / Claude Max | `do-copilot` (`--model auto`) — Pro OK |
+| Fast + cheap | `do-codex` (`gpt-6-luna`) · `do-agy` (`gemini-3.8-flash-low`) | ChatGPT / agy:Gemini | `do-copilot` (auto) — Pro OK |
 | Newest Gemini (version) | `do-agy` (`gemini-3.8-flash-high`) | agy:Gemini | `do-copilot` (Gemini 3.8 Flash) — Pro OK |
 | Long-context analysis (1M+) | `do-agy` (`gemini-3.1-pro-high`, multi-million) · `do-claude` (`claude-opus-5-5`, 1M) | agy:Gemini / Claude Max | `do-agy` (`claude-opus-4-6-thinking`) |
 | Claude-family, off the Claude quota | `do-agy` (`claude-opus-4-6-thinking`, `claude-sonnet-4-6`) | agy:non-Gemini | `do-copilot` (Sonnet 4.6 Pro OK / Opus Pro+) |
