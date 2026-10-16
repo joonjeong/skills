@@ -40,17 +40,13 @@ claude -p -r <session-id> "<follow-up>"                 # resume by id
 
 Bucket: **a Claude subscription** (Max / API), whichever profile the call runs under.
 
-Current slugs & aliases (2026-09):
-- `opus` (resolves to `claude-opus-5-5` default in CLI 2.1.280+, or `claude-opus-5`) — Flagship frontier reasoning, 1M native context window, deep architectural trade-offs, reviewer-facing narratives.
-- `sonnet` (resolves to `claude-sonnet-5`, or `claude-sonnet-4-6`) — Everyday coding, nuanced multi-file refactoring (default).
-- `haiku` (resolves to `claude-haiku-4-5`) — High-speed, lightweight tasks.
-- `fable` (resolves to `claude-fable-5-1`) — Creative and structured synthesis.
+Current aliases (verified 2026-10-17 via `claude -p --model <alias>`):
+- `opus` → `claude-opus-5-5` — Flagship reasoning, 1M context, architecture trade-offs, reviewer-facing narratives.
+- `sonnet` → `claude-sonnet-5-5` — Everyday coding, nuanced multi-file refactoring (default).
+- `haiku` → `claude-haiku-5-5` — High-speed, lightweight tasks.
+- `fable` → `claude-fable-5-1` — Creative and structured synthesis.
 
-Specific slugs you can pass directly to `--model`:
-- `claude-opus-5-5` (or `opus-5-5`) — 1M context native, top-tier reasoning.
-- `claude-opus-5` (or `opus-5`) — Previous generation Opus.
-- `claude-sonnet-5` (or `sonnet-5`) — Primary coding workhorse.
-- `claude-haiku-4-5` — Fast utility worker.
+Prefer aliases; they track the latest model. Full ids are also accepted by `--model`.
 
 - Discovery & verify: `/model` in an interactive session.
 - Select: `--model <alias|slug>`.

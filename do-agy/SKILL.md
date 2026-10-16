@@ -15,16 +15,16 @@ family conventions.
 ```bash
 # Read / Analysis / Planning (no file edits, zero risk)
 agy -p "<brief>"
-agy -p "<brief>" --print-timeout 15m          # default is 0s (wait indefinitely) or 5m
+agy -p "<brief>" --print-timeout 15m          # default 0s = wait until the turn completes
 
 # Code Edits / Generation (in an isolated directory/worktree)
 agy -p "<brief>" --mode accept-edits --dangerously-skip-permissions
 
 # Targeted model selection (Gemini bucket vs non-Gemini Claude bucket)
-agy -p "<brief>" --model gemini-3.1-pro-high             # Gemini bucket: massive context
+agy -p "<brief>" --model gemini-4-argon-high             # Gemini bucket: massive context
 agy -p "<brief>" --model gemini-3.8-flash-high           # Gemini bucket: high speed, cheap
-agy -p "<brief>" --model claude-sonnet-4-6               # non-Gemini bucket: nuanced coding
-agy -p "<brief>" --model claude-opus-4-6-thinking        # non-Gemini bucket: deep reasoning & prose
+agy -p "<brief>" --model claude-sonnet-5-5-medium               # non-Gemini bucket: nuanced coding
+agy -p "<brief>" --model claude-opus-5-5-high        # non-Gemini bucket: deep reasoning & prose
 
 # Targeted directory scope
 agy -p "<brief>" --add-dir <path> --add-dir <path2>
@@ -38,14 +38,14 @@ agy --conversation <id> -p "<follow-up>"      # resume by id
 
 Two **completely separate** quota pools — this is a primary reason to route here:
 
-| Bucket | Models (2026-09) | Key Strength |
+| Bucket | Models (2026-10, agy 1.4.0) | Key Strength |
 |---|---|---|
-| **Gemini** | `gemini-3.8-flash-{high,medium,low}`, `gemini-3.7-flash-*`, `gemini-3.6-flash-*`, `gemini-3.1-pro-{high,low}` | Multi-million token context, high-speed repo scan, structured JSON |
-| **non-Gemini** | `claude-sonnet-4-6`, `claude-opus-4-6-thinking`, `gpt-oss-120b-medium` | Nuanced refactoring, deep thinking, reviewer-facing prose, zero Claude Max quota hit |
+| **Gemini** | `gemini-4-argon-{high,medium,low}`, `gemini-3.8-flash-{high,medium,low}` | Multi-million token context, high-speed repo scan, structured JSON |
+| **non-Gemini** | `claude-sonnet-5-5-{high,medium,low}`, `claude-opus-5-5-{high,medium,low}`, `gpt-oss-120b-medium` | Nuanced refactoring, deep thinking, reviewer-facing prose, zero Claude Max quota hit |
 
 - Live list (authoritative): `agy models`.
-- Select: `--model <slug>`. Reasoning effort: `--effort low|medium|high` (flash slugs also bake the tier into the name).
-- **Quota separation**: Routing `claude-sonnet-4-6` or `claude-opus-4-6-thinking` through `do-agy` consumes Google's **non-Gemini** quota bucket, leaving your Claude Code (Claude Max / Anthropic API) quotas 100% untouched.
+- Select: `--model <slug>`. Reasoning effort: `--effort low|medium|high|xhigh|max`. Slugs bake the tier into the name; a base name without a tier/`--effort` falls back to the model's default thinking level (agy ≥1.3.4).
+- **Quota separation**: Routing `claude-sonnet-5-5-medium` or `claude-opus-5-5-high` through `do-agy` consumes Google's **non-Gemini** quota bucket, leaving your Claude Code (Claude Max / Anthropic API) quotas 100% untouched.
 
 ## 3. Structured output
 
@@ -62,7 +62,8 @@ agy -p "<brief>" --output-format stream-json                # NDJSON events
 | Delegation Goal | Recommended Flags | Rationale |
 |---|---|---|
 | **Read / Analysis / Design** | `agy -p "<brief>"` (or `--mode plan`) | Read tools need no confirmation. Fully safe. |
-| **Direct File Editing** | `agy -p "<brief>" --mode accept-edits --dangerously-skip-permissions` | `-p` has no interactive stdin. Without skip-permissions, write/tool approvals stall or fail. Always isolate in a dedicated worktree/branch. |
+| **Edits with guarded autonomy** | `agy -p "<brief>" --mode auto` | Auto mode (agy ≥1.3.5, Linux/macOS) approves edits and safe commands, still blocks irreversible actions and reviews sandbox-escaping commands. Prefer over skip-permissions when available. |
+| **Direct File Editing** (agy <1.3.5 or Windows) | `agy -p "<brief>" --mode accept-edits --dangerously-skip-permissions` | `-p` has no interactive stdin. Without skip-permissions, write/tool approvals stall or fail. Always isolate in a dedicated worktree/branch. |
 
 ### Why bash/shell commands fail in `-p` mode
 - **No interactive prompt**: In non-interactive `-p` mode, if agy attempts a tool call requiring user confirmation (e.g. terminal execution outside auto-approved rules, or sandbox escalation), it fails or aborts because stdin is closed.
@@ -71,23 +72,23 @@ agy -p "<brief>" --output-format stream-json                # NDJSON events
 
 ## 5. Delegation Strategy: Model Classification & Command Separation
 
-### 5a. Model Selection & Classification Guide: Gemini vs Claude in AGY
+### 5a. Model characteristics (routing lives in `delegate-agent`)
 
-When delegating to `do-agy`, classify the task to select the right model family and quota bucket:
+Which task goes to which adapter/model is decided by `delegate-agent`
+(`references/task-routing.md`, `references/model-index.md`). Do not route from here.
+This section only describes what each agy model family offers:
 
-| Task Type | Recommended Model | Bucket | Why |
-|---|---|---|---|
-| **Massive repo scan & multi-file trace** | `gemini-3.1-pro-high` | Gemini | Multi-million token context window easily fits dozens of full files and architecture graphs |
-| **Rapid routine refactor & draft generation** | `gemini-3.8-flash-high` | Gemini | Extremely fast execution, low latency, preserves high-tier quota |
-| **Strict JSON extraction & schema conformance** | `gemini-3.1-pro-high` (`--json-schema`) | Gemini | Highly compliant structured JSON generation |
-| **Complex business logic & delicate refactor** | `claude-sonnet-4-6` or `claude-opus-4-6-thinking` | non-Gemini | Claude's superior nuance preservation, subtle semantic handling, and adaptive thinking |
-| **Technical documentation, RFCs & reviewer PR narratives** | `claude-opus-4-6-thinking` | non-Gemini | Exceptional prose quality, top-down Minto Pyramid structuring |
-| **Adversarial code review / Red-team 2nd opinion** | `claude-opus-4-6-thinking` | non-Gemini | Cross-model diversity: checks code generated by Gemini/Codex from a fresh perspective |
-| **Offload Claude work when Claude Max is tight** | `claude-sonnet-4-6` / `claude-opus-4-6-thinking` | non-Gemini | Executes Claude models without spending Claude subscription quota |
+| Model family | Bucket | Characteristics |
+|---|---|---|
+| `gemini-4-argon-*` | Gemini | Largest context window; repo-wide scan, multi-file trace, schema-conformant JSON |
+| `gemini-3.8-flash-*` | Gemini | Lowest latency/cost; drafts, routine edits |
+| `claude-opus-5-5-*` | non-Gemini | Same generation as `do-claude` Opus; deep reasoning, prose, adversarial review — without spending Claude quota |
+| `claude-sonnet-5-5-*` | non-Gemini | Balanced coding with nuance preservation, off Claude quota |
+| `gpt-oss-120b-medium` | non-Gemini | Open-weight model; cross-family diversity |
 
 #### `do-claude` (Native CLI) vs `do-agy --model claude-*`
-- **Use `do-claude`**: When you need Claude Code native features (custom Claude plugins, MCP servers configured in `~/.claude`, specific `--permission-mode` flags). Consumes Claude Max/API quota.
-- **Use `do-agy --model claude-*`**: When you want Claude's deep reasoning and prose quality **without burning Claude quota**, or when running inside an AGY-orchestrated workflow. Consumes Antigravity non-Gemini quota.
+- **`do-claude`**: needs Claude Code native features (plugins, `~/.claude` MCP servers, `--permission-mode`). Consumes Claude Max/API quota.
+- **`do-agy --model claude-*`**: same model generation, consumes Antigravity non-Gemini quota instead.
 
 ### 5b. Command Separation Principle
 
@@ -187,7 +188,7 @@ Print one JSON object as the **last line of stdout**:
 ```json
 {
   "tool": "agy",
-  "model": "gemini-3.1-pro-high",
+  "model": "gemini-4-argon-high",
   "quota_bucket": "gemini",
   "status": "ok",
   "resets_at": null,
@@ -221,4 +222,5 @@ Print one JSON object as the **last line of stdout**:
 | **Command fails with network/sandbox error** | `--sandbox` flag enabled terminal sandbox, blocking network or commands | Remove `--sandbox`; do not ask AGY to run network commands or package installs |
 | **Tool exit code 1 on test/build** | AGY attempted to run test/build command that failed in restricted subshell | Enforce Command Separation: host runs tests; AGY only inspects code and produces fixes |
 | **Timeout exceeded** | Long analysis or large refactor hit default timeout | Pass `--print-timeout 15m` (or higher) |
+| **`--agent <name>` exits 1 listing agents** | Unknown agent name (agy ≥1.3.4 no longer silently falls back) | Check `agy agents` and pass an existing name |
 | **Question/clarification prompt blocked** | AGY called interactive question tool in headless mode | Ensure brief is fully self-contained and explicit about acceptance criteria |
