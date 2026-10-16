@@ -96,8 +96,22 @@ summarizes the union of return fields the router parses.
   `resets_at`. Do not do the work yourself as a fallback and do not sit and wait —
   hand the decision back.
 
-When you have 2+ viable adapters, prefer the one whose bucket has the most headroom —
-this is how idle subscription quota gets used.
+When you have 2+ viable adapters, break ties in this order:
+
+1. **Quality bar** — drop any candidate that cannot meet the task's quality bar.
+2. **Headroom** — among the rest, prefer the bucket with the most remaining quota
+   (this is how idle subscription quota gets used).
+3. **Cost** — if headroom is similar, prefer the cheaper model/tier.
+
+Step 2.4's "cheapest adapter" means cheapest *after* steps 1–2 here, not instead of them.
+
+**Start cheap, escalate on evidence.** Begin at the task's starting tier
+(`references/task-routing.md` → "Starting tier + escalation"; tiers in
+`references/model-index.md` → "Cost tier ladder"). Escalate only on a concrete trigger
+(checker fail, timeout, unresolved ambiguity, stakes found to be high), and at most
+**one tier per retry** (T0→T1, never T0→T2). Reviewer-facing prose and
+high-stakes/irreversible work start at T2. Never retry a `quota_exceeded` bucket —
+move to another bucket at the same tier. Retries still need authorization per Step 5.4.
 
 ## Step 4 — execute
 
@@ -135,6 +149,14 @@ Never blind-apply external output.
 - **Hermes node**: the CLIs are installed per node. Obey the worktree rules
   (`resistance-worktree/{task}`). Results flow operator → synthesis → Discord/Issue,
   never straight to `main`.
+
+## Routing policy provenance
+
+The routing tables are **qualitative opinions, not benchmark results**. Nothing in this
+skill family measures model quality. When a route matters (repeated task type, high
+cost of a wrong pick), prefer a `Redundant / compare` run and record the outcome before
+changing a table row. Update table snapshot dates whenever slugs change.
+Measure with `eval-agent-matrix`; re-tune after CLI/model updates with `refresh-agent-routing`.
 
 ## References
 

@@ -2,18 +2,32 @@
 
 Model identifiers churn monthly (e.g. GPT-5.4 retired 2026-08-31). This index keys on
 **provider family + capability tier**, not exact slugs. Each adapter's "Model catalog"
-section carries the current slugs plus a live-discovery command. Snapshot: 2026-09.
+section carries the current slugs plus a live-discovery command. Snapshot: 2026-10 (agy 1.4.0, claude aliases verified 2026-10-17).
 
 | Want | 1st choice (adapter, example model) | Bucket | Alternative (condition) |
 |---|---|---|---|
-| Top-tier general reasoning | `do-claude` (`opus`: `claude-opus-5-5`, 1M context) · `do-codex` (`gpt-6-astra` / `gpt-6-sol`) | Claude Max / ChatGPT | `do-copilot` (Opus 5) — **Pro+ or higher** |
-| Everyday coding (balanced) | `do-codex` (`gpt-6-luna` / `gpt-5.6-terra`) · `do-claude` (`sonnet`: `claude-sonnet-5`) | ChatGPT / Claude Max | `do-copilot` (`--model auto`) — Pro OK |
+| Top-tier general reasoning | `do-claude` (`opus`: `claude-opus-5-5`, 1M context) · `do-codex` (`gpt-6-astra` / `gpt-6-sol`) | Claude Max / ChatGPT | `do-agy` (`claude-opus-5-5-high`, agy:non-Gemini — same generation, off Claude quota) · `do-copilot` (Opus 5) — **Pro+ or higher** |
+| Everyday coding (balanced) | `do-codex` (`gpt-6-luna` / `gpt-5.6-terra`) · `do-claude` (`sonnet`: `claude-sonnet-5-5`) | ChatGPT / Claude Max | `do-copilot` (`--model auto`) — Pro OK |
 | Fast + cheap | `do-codex` (`gpt-6-luna`) · `do-agy` (`gemini-3.8-flash-low`) | ChatGPT / agy:Gemini | `do-copilot` (auto) — Pro OK |
-| Newest Gemini (version) | `do-agy` (`gemini-3.8-flash-high`) | agy:Gemini | `do-copilot` (Gemini 3.8 Flash) — Pro OK |
-| Long-context analysis (1M+) | `do-agy` (`gemini-3.1-pro-high`, multi-million) · `do-claude` (`claude-opus-5-5`, 1M) | agy:Gemini / Claude Max | `do-agy` (`claude-opus-4-6-thinking`) |
-| Claude-family, off the Claude quota | `do-agy` (`claude-opus-4-6-thinking`, `claude-sonnet-4-6`) | agy:non-Gemini | `do-copilot` (Sonnet 4.6 Pro OK / Opus Pro+) |
+| Newest Gemini (version) | `do-agy` (`gemini-4-argon-high`) | agy:Gemini | `do-copilot` (Gemini 3.8 Flash) — Pro OK |
+| Long-context analysis (1M+) | `do-agy` (`gemini-4-argon-high`, multi-million) · `do-claude` (`claude-opus-5-5`, 1M) | agy:Gemini / Claude Max | `do-agy` (`claude-opus-5-5-high`) |
+| Claude-family, off the Claude quota | `do-agy` (`claude-opus-5-5-high`, `claude-sonnet-5-5-medium`) | agy:non-Gemini | `do-copilot` (Sonnet Pro OK / Opus Pro+) |
 | Open-source model | `do-agy` (`gpt-oss-120b-medium`) | agy:non-Gemini | `do-codex --oss` |
 | GitHub-native task | `do-copilot` (`--model auto`) | Copilot credits | — |
+
+## Cost tier ladder (start low, escalate one step)
+
+| Tier | `do-agy` | `do-claude` | `do-codex` | `do-copilot` |
+|---|---|---|---|---|
+| **T0** cheap / fast | `gemini-3.8-flash-low` (agy:Gemini) | `haiku` (Claude Max) | `gpt-6-luna`, effort low (ChatGPT) | `--model auto` (credits; Pro OK) |
+| **T1** balanced | `gemini-3.8-flash-high` (agy:Gemini) · `claude-sonnet-5-5-medium` (agy:non-Gemini) | `sonnet` | `gpt-5.6-terra` · `gpt-6-luna`, effort medium/high | `--model auto` (Sonnet-class) |
+| **T2** top | `gemini-4-argon-high` (agy:Gemini) · `claude-opus-5-5-high` (agy:non-Gemini) | `opus` | `gpt-6-sol` / `gpt-6-astra` (effort high/ultra) | Opus 5 — **Pro+ only** |
+
+Buckets are independent: escalating within agy can hop Gemini → non-Gemini, and moving
+adapters moves quota. Prefer escalating inside a bucket that still has headroom; a
+`quota_exceeded` bucket is skipped, never retried. Evidence: `eval-agent-matrix/results`
+(2026-10-17, n=1/cell, provisional) — T0/T1 passed all mechanical tasks except
+`haiku` on bugfix; see `task-routing.md`.
 
 ## Copilot plan gate
 

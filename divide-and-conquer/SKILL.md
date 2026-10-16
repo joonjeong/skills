@@ -76,6 +76,11 @@ When a unit's two axes disagree on tier, **difficulty wins** — route a `hard` 
 `templated-repeat` unit as `hard`. Repetition pulls a unit *down* a tier only when
 its difficulty is `trivial` or `routine`.
 
+Tier mapping (`delegate-agent/references/model-index.md` → "Cost tier ladder"):
+mechanical rows = **T0**, `routine` = **T1**, `hard` · `novel-design` = **T2**. A unit
+whose checker fails is retried **one tier up** (never skip T0→T2); the integrator/reviewer
+in Step 5 works at T2 when any unit was `hard`.
+
 Concrete model slugs churn monthly — take them from
 `delegate-agent/references/model-index.md`, never hard-code them here.
 

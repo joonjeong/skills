@@ -40,6 +40,11 @@ blue and/or red **external CLIs via `delegate-agent`** (e.g. blue = `do-codex`, 
 reds** to apply different lenses (correctness, security, readability). Model slugs come
 from `delegate-agent/references/model-index.md`.
 
+Tiers (`model-index.md` → "Cost tier ladder"): **blue starts T1** (T0 for mechanical,
+test-guarded parts), escalating one tier only when red's blockers survive a revise
+round. **Red is T2** and, when external, a **different model family** from blue — a
+judge never grades its own family's output.
+
 - **Blue** — bias to action, produce a complete draft, do not sandbag.
 - **Red** — conservative, adversarial, assume defects exist, separate `BLOCKING` from
   the rest, never rubber-stamp, actively hunt for gamed checks.

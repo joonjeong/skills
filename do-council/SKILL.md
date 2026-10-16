@@ -39,9 +39,11 @@ itself convene a council or delegate.
    - Fill seats by **model-family diversity first**: one per distinct family
      (Codex/GPT, agy/Gemini, Claude, Copilot).
    - Size exceeds available families → fill remaining seats with the **same adapter on a
-     different model** (e.g. agy: `gemini-3.1-pro-high` → `gemini-3.8-flash-high` →
-     `claude-opus-4-6-thinking` → `gpt-oss-120b-medium`). Never two seats on the
+     different model** (e.g. agy: `gemini-4-argon-high` → `gemini-3.8-flash-high` →
+     `claude-opus-5-5-high` → `gpt-oss-120b-medium`). Never two seats on the
      identical `(adapter, model)`.
+   - **Tier: seats are T2** (or T1 where a family's T2 is quota-exhausted; note it in the
+     diversity appendix). Deliberation is high-stakes judgement — don't seat T0 models.
    - Fewer than **2** usable seats → stop and report to the operator. No 1-member council.
 3. **Assign each seat a random codename** from a neutral category (birds, trees,
    minerals, rivers), no repeats. All debate, the comparison table, and the consensus
@@ -86,7 +88,8 @@ and answers the objection directly.
 
 ### A4. Round N+1 — the vote
 
-Per question, one ballot. The synthesizer (you) **does not vote**.
+Per question, one ballot. The synthesizer (you) **does not vote**. The synthesizer runs
+at T2; if delegated, use a model family that holds no seat where the roster allows.
 
 - Locked question → record the held option as the result, with the tally.
 - Open question → each seat casts one option + one line; **majority wins**. Tie →

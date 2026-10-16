@@ -15,6 +15,10 @@ should the reader meet first?), then reconciles the two.
 This skill **diagnoses and proposes. It does not apply edits.** The output is a review,
 not a rewritten document — the human, or a writing skill, does the rewrite.
 
+If this review is delegated, run it at **T2** (reviewer-facing prose; see
+`delegate-agent/references/task-routing.md`), on a model family different from the
+document's author where known.
+
 ## When to use
 
 - A human reader will struggle with the document as written.
