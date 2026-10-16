@@ -1,0 +1,7 @@
+Memo from accounts payable, week 41.
+
+We received INV-0042 from Northwind Traders on Monday; it totals 1,250.50 USD and was settled by wire on Thursday.
+Contoso GmbH sent invoice INV-0007 for EUR 980 — still outstanding, finance is disputing a line item.
+Also: INV-0103, Fabrikam KK, ¥64,000 (JPY). Payment confirmed.
+Correction to last week's note: INV-0042's total is unchanged, but the vendor name on file should read "Northwind Traders Ltd.".
+A duplicate scan of INV-0007 arrived by email; ignore it.

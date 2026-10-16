@@ -1,0 +1,26 @@
+--- a/billing/retry.py
++++ b/billing/retry.py
+@@ -1,14 +1,22 @@
+-import time
++import random
++import time
++
++MAX_DELAY = 30.0
+ 
+ def charge_with_retry(gateway, card, amount, attempts=5):
+-    for i in range(attempts):
++    last = None
++    for i in range(attempts):
+         try:
+-            return gateway.charge(card, amount)
+-        except Exception:
+-            time.sleep(1)
+-    raise RuntimeError("charge failed")
++            return gateway.charge(card, amount, idempotency_key=card.token + str(amount))
++        except gateway.TransientError as e:
++            last = e
++            delay = min(MAX_DELAY, (2 ** i) + random.uniform(0, 1))
++            time.sleep(delay)
++        except gateway.DeclinedError:
++            raise
++    raise RuntimeError("charge failed after retries") from last
